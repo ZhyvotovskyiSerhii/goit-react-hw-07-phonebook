@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { generate } from "shortid";
 import styles from "./App.module.css";
 import Section from "./Section";
@@ -6,72 +6,56 @@ import Form from "./Form";
 import Contacts from "./Contacts";
 import ContactsFilter from "./Contacts/ContactsFilter";
 import Alert from "./Alert";
-import { connect } from "react-redux";
-import * as actions from "../actions/PhoneBook";
-import axios from "axios";
+import { useDispatch, useSelector } from "react-redux";
+import { getPhoneBookContacts, addPhoneBookContact, removePhoneBookContact, changePhoneBookFilter }  from "../phonebook/phonebook.operations"
+import { getContacts, getFilter, getError} from "../phonebook/phonebook.selectors"
+
 const App = ({
-  items,
-  filter,
-  addContact,
-  removeContact,
-  filterContact,
-  setContacts,
+  // items,
+  // filter,
+  // error: apiError,
+  // getPhoneBookContacts,
+  // addPhoneBookContact,
+  // removePhoneBookContact,
+  // changePhoneBookFilter,
 }) => {
-  const [error, setError] = useState("");
 
-  const handleError = (e) => {
-    setError(e);
+  const items = useSelector(getContacts);
+  const filter = useSelector(getFilter);
+  const error = useSelector(getError);
 
-    setTimeout(() => {
-      setError("");
-    }, 2000);
-  };
+  // const [error, setError] = useState("");
 
-  useEffect(() => {
-    axios
-      .get("http://localhost:3002/contacts")
-      .then(({ data }) => setContacts({ items: data }))
-      .catch((e) => handleError(e.message));
-  }, []);
+  // const handleError = (e) => {
+  //   setError(e);
 
-  useEffect(() => {
-    axios
-      .get("http://localhost:3002/contacts?name_like=" + filter)
-      .then(({ data }) => setContacts({ items: data }))
-      .catch((e) => handleError(e.message));
-  }, [filter]);
+  //   setTimeout(() => {
+  //     setError("");
+  //   }, 2000);
+  // };
+ 
+  const dispatch = useDispatch();
+
+
+  useEffect(() => dispatch(getPhoneBookContacts()), []);
+
+  // useEffect(() => dispatch(handleError(apiError)), [apiError]);
+
+  // useEffect(() => dispatch(getPhoneBookContacts(filter)), [filter]);
 
   const addNewContact = ({ name, number }) => {
     const isAlreadyExist = items.find(
       (contact) => contact.name === name || contact.number === number
     );
     if (isAlreadyExist) {
-      handleError(`${name} is already in contacts`);
+      return alert((`${name} is already in contacts`));
     } else {
-      axios
-        .post("http://localhost:3002/contacts", {
-          id: generate(),
-          name,
-          number,
-        })
-        .then(({ data }) =>
-          addContact({
-            item: data,
-          })
-        )
-        .catch((e) => handleError(e.message));
+      dispatch(addPhoneBookContact({
+        id: generate(),
+        name,
+        number,
+      }));
     }
-  };
-
-  const deleteContact = (contactId) => {
-    axios
-      .delete("http://localhost:3002/contacts/" + contactId)
-      .then(() => removeContact({ id: contactId }))
-      .catch((e) => handleError(e.message));
-  };
-
-  const changeFilter = (e) => {
-    filterContact({ filter: e.target.value });
   };
 
   return (
@@ -83,8 +67,14 @@ const App = ({
 
         <Section>
           <div className={styles.container}>
-            <ContactsFilter value={filter} onChange={changeFilter} />
-            <Contacts contacts={items} onDelete={deleteContact} />
+            <ContactsFilter
+              value={filter}
+              onChange={(e) => dispatch(changePhoneBookFilter(e.target.value))}
+            />
+            <Contacts
+              // contacts={items}
+              // onDelete={(contactId) => removePhoneBookContact(contactId)}
+            />
           </div>
         </Section>
       </div>
@@ -93,9 +83,6 @@ const App = ({
   );
 };
 
-const mapStateToProps = (state) => ({
-  items: state.phoneBook.items,
-  filter: state.phoneBook.filter,
-});
 
-export default connect(mapStateToProps, { ...actions })(App);
+
+export default App;
