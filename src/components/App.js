@@ -51,7 +51,6 @@ const App = ({
       return alert((`${name} is already in contacts`));
     } else {
       dispatch(addPhoneBookContact({
-        id: generate(),
         name,
         number,
       }));
